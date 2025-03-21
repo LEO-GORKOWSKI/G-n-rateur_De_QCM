@@ -158,3 +158,165 @@ class GenerateurQCM:
             sujets[i] = self.generer_sujet(i)
         
         return sujets
+    
+    def generer_fichier_txt(self, sujets, nom_fichier="qcm_sujets.txt"):
+        """
+        Génère un fichier texte contenant tous les sujets.
+        
+        Args:
+            sujets (dict): Dictionnaire de sujets par numéro de sujet
+            nom_fichier (str): Nom du fichier à générer
+        """
+        with open(nom_fichier, 'w', encoding='utf-8') as f:
+            for num_sujet, (questions, _) in sujets.items():
+                f.write(f"SUJET {num_sujet}\n")
+                f.write("\nNom prénom : _______________________________\n\n")
+                
+                # Consignes
+                f.write("CONSIGNES :\n")
+                f.write("- Entourez la lettre correspondant à la bonne réponse sur le tableau de réponses ci-dessous.\n")
+                f.write("- Une seule réponse est correcte pour chaque question.\n")
+                f.write("- Toute rature ou correction sur le tableau sera considérée comme une erreur.\n\n")
+                
+                # Tableau de réponses
+                f.write("Tableau de réponses - Sujet " + str(num_sujet) + "\n")
+                for i in range(1, self.nb_questions + 1):
+                    if i == self.nb_questions // 2 + 1:
+                        f.write("\n")  # Saut de ligne après la moitié des questions
+                    f.write(f"{i} ")
+                f.write("\n\n")
+                
+                # Questions
+                for q in questions:
+                    f.write(f"Question {q['numero']} : {q['question']}\n")
+                    for j, reponse in enumerate(q['reponses']):
+                        lettre = chr(97 + j)  # 'a', 'b', 'c' ou 'd'
+                        f.write(f"{lettre}) {reponse}\n")
+                    f.write("\n")
+                
+                f.write("\n---------------------------------------------------\n\n")
+    
+    def generer_fichier_correction(self, sujets, nom_fichier="qcm_corrections.txt"):
+        """
+        Génère un fichier de correction contenant les réponses correctes pour chaque sujet.
+        
+        Args:
+            sujets (dict): Dictionnaire de sujets par numéro de sujet
+            nom_fichier (str): Nom du fichier à générer
+        """
+        with open(nom_fichier, 'w', encoding='utf-8') as f:
+            # Écrire les corrections pour chaque sujet
+            for num_sujet, (_, reponses) in sujets.items():
+                f.write(f"Sujet {num_sujet}\n")
+                
+                # Écrire les réponses en groupes de 5
+                for i in range(0, len(reponses), 5):
+                    groupe = reponses[i:i+5]
+                    f.write(''.join(groupe) + ' ')
+                f.write("\n\n")
+            
+            # Ajouter les informations supplémentaires pour le correcteur
+            f.write("\n--- Informations supplémentaires pour le correcteur ---\n\n")
+            
+            # Quelles questions initiales ont été intégrées dans chaque sujet
+            for num_sujet, indices in self.questions_par_sujet.items():
+                indices_str = ','.join(str(i) for i in indices)
+                f.write(f"Sujet {num_sujet} : questions {indices_str}\n")
+            
+            f.write("\n")
+            
+            # Dans quels sujets apparaît chaque question initiale
+            for num_question, sujets_indices in self.sujets_par_question.items():
+                if sujets_indices:  # Si la question apparaît dans au moins un sujet
+                    sujets_str = ','.join(str(i) for i in sujets_indices)
+                    f.write(f"Question {num_question} : sujets {sujets_str}\n")
+    
+    def generer_fichier_docx(self, sujets, nom_fichier="qcm_sujets.docx"):
+        """
+        Génère un fichier DOCX contenant tous les sujets.
+        
+        Args:
+            sujets (dict): Dictionnaire de sujets par numéro de sujet
+            nom_fichier (str): Nom du fichier à générer
+        """
+        document = Document()
+        
+        # Définir la mise en page : paysage, marges réduites
+        section = document.sections[0]
+        section.orientation = WD_ORIENT.LANDSCAPE
+        section.page_width, section.page_height = section.page_height, section.page_width
+        
+        # Réduire les marges
+        section.left_margin = Cm(1.5)
+        section.right_margin = Cm(1.5)
+        section.top_margin = Cm(1.5)
+        section.bottom_margin = Cm(1.5)
+        
+        # Créer les sujets
+        for num_sujet, (questions, _) in sujets.items():
+            # Titre
+            titre = document.add_paragraph()
+            titre.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            titre_run = titre.add_run(f"SUJET {num_sujet}")
+            titre_run.bold = True
+            titre_run.font.size = Pt(16)
+            
+            # Champ Nom/Prénom
+            nom = document.add_paragraph()
+            nom.add_run("Nom prénom : _______________________________")
+            
+            # Consignes
+            consignes = document.add_paragraph()
+            consignes.add_run("CONSIGNES :\n").bold = True
+            consignes.add_run("- Entourez la lettre correspondant à la bonne réponse sur le tableau de réponses ci-dessous.\n")
+            consignes.add_run("- Une seule réponse est correcte pour chaque question.\n")
+            consignes.add_run("- Toute rature ou correction sur le tableau sera considérée comme une erreur.")
+            
+            # Tableau de réponses
+            reponses_titre = document.add_paragraph()
+            reponses_titre.add_run(f"Tableau de réponses - Sujet {num_sujet}").bold = True
+            
+            # Ajouter les numéros de question pour le tableau de réponses
+            tableau_reponses = document.add_paragraph()
+            for i in range(1, self.nb_questions + 1):
+                if i == self.nb_questions // 2 + 1:
+                    tableau_reponses.add_run("\n")  # Saut de ligne à la moitié
+                tableau_reponses.add_run(f"{i} ")
+            
+            document.add_paragraph()  # Espace
+            
+            # Créer une section à deux colonnes pour les questions
+            section = document.add_section(WD_SECTION.NEW_PAGE)
+            section.orientation = WD_ORIENT.LANDSCAPE
+            section.page_width, section.page_height = section.page_height, section.page_width
+            section.left_margin = Cm(1.5)
+            section.right_margin = Cm(1.5)
+            section.top_margin = Cm(1.5)
+            section.bottom_margin = Cm(1.5)
+            
+            # Configurer 2 colonnes
+            section.left_margin = Inches(0.5)
+            section.right_margin = Inches(0.5)
+            section.column_width = Inches(4)
+            section.column_count = 2
+            
+            # Questions et réponses
+            for q in questions:
+                question_para = document.add_paragraph()
+                question_para.add_run(f"Question {q['numero']} : {q['question']}").bold = True
+                
+                for j, reponse in enumerate(q['reponses']):
+                    lettre = chr(97 + j)  # 'a', 'b', 'c' ou 'd'
+                    reponse_para = document.add_paragraph()
+                    reponse_para.add_run(f"{lettre}) {reponse}")
+                
+                document.add_paragraph()  # Espace entre les questions
+            
+            # Ajouter un saut de page après chaque sujet sauf le dernier
+            if num_sujet < self.nb_eleves - 1:
+                document.add_page_break()
+        
+        # Sauvegarder le document
+        document.save(nom_fichier)
+    
+    
