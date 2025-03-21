@@ -91,3 +91,70 @@ class GenerateurQCM:
                 i += 7
         
         return questions
+    
+    def generer_sujet(self, num_sujet):
+        """
+        Génère un sujet pour un élève.
+        
+        Args:
+            num_sujet (int): Numéro du sujet à générer
+            
+        Returns:
+            tuple: (liste de questions pour ce sujet, 
+                   liste des réponses correctes sous forme de lettres)
+        """
+        # Sélectionner aléatoirement les questions pour ce sujet
+        indices_questions = random.sample(range(len(self.questions)), self.nb_questions)
+        
+        # Enregistrer quelles questions apparaissent dans ce sujet
+        self.questions_par_sujet[num_sujet] = indices_questions
+        
+        # Mettre à jour les sujets dans lesquels chaque question apparaît
+        for idx in indices_questions:
+            self.sujets_par_question[idx].append(num_sujet)
+        
+        questions_sujet = []
+        reponses_correctes = []
+        
+        for i, idx in enumerate(indices_questions):
+            question = self.questions[idx]
+            
+            # Copier les réponses pour pouvoir les mélanger
+            reponses = question['reponses'].copy()
+            solution_originale = question['solution'] - 1  # Convertir 1-4 en 0-3
+            
+            # Mélanger les réponses
+            random.shuffle(reponses)
+            
+            # Trouver la nouvelle position de la bonne réponse
+            nouvelle_solution = reponses.index(question['reponses'][solution_originale])
+            
+            # Convertir l'indice (0-3) en lettre (a-d)
+            lettre_solution = chr(97 + nouvelle_solution)  # 'a', 'b', 'c' ou 'd'
+            
+            # Ajouter la question et les réponses mélangées au sujet
+            questions_sujet.append({
+                'numero': i + 1,
+                'question': question['question'],
+                'reponses': reponses,
+                'solution': nouvelle_solution + 1  # Reconvertir 0-3 en 1-4
+            })
+            
+            # Ajouter la lettre de la bonne réponse à la liste
+            reponses_correctes.append(lettre_solution)
+        
+        return questions_sujet, reponses_correctes
+    
+    def generer_sujets(self):
+        """
+        Génère tous les sujets pour tous les élèves.
+        
+        Returns:
+            dict: Dictionnaire de sujets par numéro de sujet
+        """
+        sujets = {}
+        
+        for i in range(self.nb_eleves):
+            sujets[i] = self.generer_sujet(i)
+        
+        return sujets
