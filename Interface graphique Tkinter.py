@@ -60,4 +60,62 @@ class InterfaceQCM(tk.Tk):
         tk.Button(boutons_frame, text="Générer QCM", command=self._generer_qcm, padx=10, pady=5).pack(side=tk.LEFT, padx=10)
         tk.Button(boutons_frame, text="Quitter", command=self.destroy, padx=10, pady=5).pack(side=tk.LEFT)
     
+    def _parcourir_fichier(self):
+        """Ouvre une boîte de dialogue pour sélectionner le fichier de questions."""
+        fichier = filedialog.askopenfilename(
+            title="Sélectionner le fichier de questions",
+            filetypes=[("Fichiers texte", "*.txt"), ("Tous les fichiers", "*.*")]
+        )
+        if fichier:
+            self.fichier_questions.set(fichier)
     
+    def _generer_qcm(self):
+        """Génère les QCM avec les paramètres spécifiés."""
+        # Vérification des entrées
+        if not self.fichier_questions.get():
+            messagebox.showerror("Erreur", "Veuillez sélectionner un fichier de questions.")
+            return
+        
+        if not os.path.exists(self.fichier_questions.get()):
+            messagebox.showerror("Erreur", "Le fichier de questions n'existe pas.")
+            return
+        
+        try:
+            # Créer le générateur
+            generateur = GenerateurQCM(
+                self.fichier_questions.get(),
+                self.nb_eleves.get(),
+                self.nb_questions.get(),
+                self.graine.get()
+            )
+            
+            # Générer les sujets
+            sujets = generateur.generer_sujets()
+            
+            # Générer les fichiers
+            format_sortie = self.format_sortie.get()
+            
+            if format_sortie in ['txt', 'both']:
+                generateur.generer_fichier_txt(sujets)
+                generateur.generer_fichier_correction(sujets)
+            
+            if format_sortie in ['docx', 'both']:
+                generateur.generer_fichier_docx(sujets)
+                generateur.generer_fichier_correction_docx(sujets)
+            
+            messagebox.showinfo(
+                "Succès",
+                f"QCM générés avec succès !\n\n"
+                f"Fichiers créés dans le répertoire courant :\n"
+                f"- {'qcm_sujets.txt, ' if format_sortie in ['txt', 'both'] else ''}"
+                f"{'qcm_corrections.txt' if format_sortie in ['txt', 'both'] else ''}\n"
+                f"- {'qcm_sujets.docx, ' if format_sortie in ['docx', 'both'] else ''}"
+                f"{'qcm_corrections.docx' if format_sortie in ['docx', 'both'] else ''}"
+            )
+            
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Une erreur s'est produite : {str(e)}")
+
+if __name__ == "__main__":
+    app = InterfaceQCM()
+    app.mainloop()
