@@ -385,3 +385,38 @@ class GenerateurQCM:
         
         # Sauvegarder le document
         document.save(nom_fichier)
+
+if __name__ == "__main__":
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='Générateur de QCM')
+    parser.add_argument('fichier_questions', help='Fichier contenant les questions')
+    parser.add_argument('--nb_eleves', type=int, default=5, help='Nombre d\'élèves (sujets à créer)')
+    parser.add_argument('--nb_questions', type=int, default=10, choices=[5, 10, 15, 20], 
+                        help='Nombre de questions par sujet (5, 10, 15 ou 20)')
+    parser.add_argument('--graine', type=int, default=42, help='Graine pour la génération aléatoire')
+    parser.add_argument('--format', choices=['txt', 'docx', 'both'], default='both', 
+                        help='Format de sortie (txt, docx, both)')
+    
+    args = parser.parse_args()
+    
+    try:
+        # Créer le générateur
+        generateur = GenerateurQCM(args.fichier_questions, args.nb_eleves, args.nb_questions, args.graine)
+        
+        # Générer les sujets
+        sujets = generateur.generer_sujets()
+        
+        # Générer les fichiers
+        if args.format in ['txt', 'both']:
+            generateur.generer_fichier_txt(sujets)
+            generateur.generer_fichier_correction(sujets)
+            print(f"Fichiers texte générés : qcm_sujets.txt et qcm_corrections.txt")
+        
+        if args.format in ['docx', 'both']:
+            generateur.generer_fichier_docx(sujets)
+            generateur.generer_fichier_correction_docx(sujets)
+            print(f"Fichiers DOCX générés : qcm_sujets.docx et qcm_corrections.docx")
+        
+    except Exception as e:
+        print(f"Erreur : {e}")
