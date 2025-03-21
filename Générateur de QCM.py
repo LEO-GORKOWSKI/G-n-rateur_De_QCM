@@ -319,4 +319,69 @@ class GenerateurQCM:
         # Sauvegarder le document
         document.save(nom_fichier)
     
-    
+    def generer_fichier_correction_docx(self, sujets, nom_fichier="qcm_corrections.docx"):
+        """
+        Génère un fichier DOCX de correction contenant les réponses correctes pour chaque sujet.
+        
+        Args:
+            sujets (dict): Dictionnaire de sujets par numéro de sujet
+            nom_fichier (str): Nom du fichier à générer
+        """
+        document = Document()
+        
+        # Titre
+        titre = document.add_paragraph()
+        titre.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        titre_run = titre.add_run("FEUILLE DE CORRECTION")
+        titre_run.bold = True
+        titre_run.font.size = Pt(16)
+        
+        # Écrire les corrections pour chaque sujet
+        for num_sujet, (_, reponses) in sujets.items():
+            # Titre du sujet
+            sujet_titre = document.add_paragraph()
+            sujet_titre.add_run(f"Sujet {num_sujet}").bold = True
+            
+            # Écrire les réponses
+            reponses_para = document.add_paragraph()
+            for i in range(0, len(reponses), 5):
+                groupe = reponses[i:i+5]
+                reponses_para.add_run(''.join(groupe) + ' ')
+            
+            document.add_paragraph()  # Espace entre les sujets
+        
+        # Ajouter un saut de page pour les informations supplémentaires
+        document.add_page_break()
+        
+        # Titre pour les informations supplémentaires
+        titre_info = document.add_paragraph()
+        titre_info.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        titre_info_run = titre_info.add_run("INFORMATIONS SUPPLÉMENTAIRES POUR LE CORRECTEUR")
+        titre_info_run.bold = True
+        titre_info_run.font.size = Pt(14)
+        
+        document.add_paragraph()  # Espace
+        
+        # Sous-titre pour les questions par sujet
+        sous_titre1 = document.add_paragraph()
+        sous_titre1.add_run("Questions initiales intégrées dans chaque sujet :").bold = True
+        
+        # Quelles questions initiales ont été intégrées dans chaque sujet
+        for num_sujet, indices in self.questions_par_sujet.items():
+            indices_str = ', '.join(str(i) for i in indices)
+            document.add_paragraph(f"Sujet {num_sujet} : questions {indices_str}")
+        
+        document.add_paragraph()  # Espace
+        
+        # Sous-titre pour les sujets par question
+        sous_titre2 = document.add_paragraph()
+        sous_titre2.add_run("Sujets dans lesquels apparaît chaque question initiale :").bold = True
+        
+        # Dans quels sujets apparaît chaque question initiale
+        for num_question, sujets_indices in self.sujets_par_question.items():
+            if sujets_indices:  # Si la question apparaît dans au moins un sujet
+                sujets_str = ', '.join(str(i) for i in sujets_indices)
+                document.add_paragraph(f"Question {num_question} : sujets {sujets_str}")
+        
+        # Sauvegarder le document
+        document.save(nom_fichier)
